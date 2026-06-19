@@ -29,6 +29,7 @@ from screener.output import (
     print_header, print_results_table, print_commentary,
     save_csv, save_json,
 )
+from screener.html_report import save_html_report
 
 console = Console()
 
@@ -87,6 +88,7 @@ def main():
                         help="Parallel fetch workers (default: 8)")
     parser.add_argument("--no-csv",   action="store_true", help="Skip CSV output")
     parser.add_argument("--no-json",  action="store_true", help="Skip JSON output")
+    parser.add_argument("--no-html",  action="store_true", help="Skip HTML report")
     parser.add_argument("--no-commentary", action="store_true",
                         help="Skip per-trade commentary")
     args = parser.parse_args()
@@ -108,6 +110,7 @@ def main():
         "output_dir":         os.getenv("OUTPUT_DIR", "output"),
         "save_csv":           os.getenv("SAVE_CSV", "true").lower() == "true",
         "save_json":          os.getenv("SAVE_JSON", "true").lower() == "true",
+        "save_html":          os.getenv("SAVE_HTML", "true").lower() == "true",
     }
 
     # ── VIX & macro override ───────────────────────────────────────────────
@@ -169,22 +172,35 @@ def main():
             f"[dim]Tickers with errors ({len(errors)}): "
             f"{', '.join(list(errors.keys())[:10])}{'...' if len(errors) > 10 else ''}[/dim]"
         )
-        sys.exit(0)
-
-    print_results_table(top)
-
-    if not args.no_commentary:
-        print_commentary(top)
+    else:
+        print_results_table(top)
+        if not args.no_commentary:
+            print_commentary(top)
 
     # ── Save files ─────────────────────────────────────────────────────────
     timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
     out_dir   = config["output_dir"]
 
-    if config["save_csv"] and not args.no_csv:
-        save_csv(top, f"{out_dir}/csp_results_{timestamp}.csv")
+    if top:
+        if config["save_csv"] and not args.no_csv:
+            save_csv(top, f"{out_dir}/csp_results_{timestamp}.csv")
 
-    if config["save_json"] and not args.no_json:
-        save_json(top, f"{out_dir}/csp_results_{timestamp}.json")
+        if config["save_json"] and not args.no_json:
+            save_json(top, f"{out_dir}/csp_results_{timestamp}.json")
+
+    if config["save_html"] and not args.no_html:
+        html_path = f"{out_dir}/report.html"   # fixed filename — easy to find/link
+        save_html_report(
+            candidates    = top,
+            vix           = vix,
+            regime        = regime,
+            scanned       = len(tickers),
+            passed        = len(all_candidates),
+            account_size  = config["account_size"],
+            path          = html_path,
+            errors        = errors,
+        )
+        console.print(f"  [dim]HTML report saved → {html_path}[/dim]")
 
     # ── Error summary (optional) ───────────────────────────────────────────
     if errors:
