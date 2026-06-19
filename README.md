@@ -1,201 +1,174 @@
-# CSP Options Screener
+# Institutional CSP Screener
 
-An institutional-grade **Cash Secured Put** screener for premium harvesting and Wheel Strategy entries. Connects to live market data, scores candidates across 8 quantitative factors, and outputs a ranked Top 10 table with full trade commentary.
+A real, runnable Cash Secured Put screener that pulls **live market data** via yfinance, applies institutional-grade filters, scores every eligible put contract using a quantitative framework, and outputs a ranked table — as an HTML report and a terminal table.
 
----
-
-## What It Does
-
-- Scans S&P 500, Nasdaq 100, Russell 1000, and liquid ETFs
-- Applies hard rejection filters (price, volume, OI, spread, IVR, delta, earnings, DTE)
-- Scores every passing candidate across 8 weighted factors (VRP, yield, earnings distance, delta, IVR, expected move cushion, liquidity, trend)
-- Computes a Juice Score tiebreaker
-- Detects macro regime (VIX) and applies conservative overrides when VIX > 25
-- Outputs a clean ranked table + per-trade commentary to terminal and CSV
+No estimated values. No invented numbers. Real data or nothing.
 
 ---
 
-## Strategy Profile
+## Two ways to run this
 
-| Parameter | Value |
-|-----------|-------|
-| Account size | $25,000 – $100,000 |
-| Style | 80% premium harvest / 20% Wheel entry |
-| Target DTE | 21 – 45 days |
-| Target delta | 0.10 – 0.20 |
-| Max position size | 25% of account |
+### Option A — On GitHub, click a button (no install)
 
----
+1. Push this repo to GitHub
+2. Go to the **Actions** tab → click **Run CSP Screener** in the sidebar
+3. Click **Run workflow** (top right) — pick tier, top N, account size → **Run workflow**
+4. Wait 1–10 minutes depending on tier
+5. See results two ways:
+   - **HTML page**: `https://YOUR_USERNAME.github.io/REPO_NAME/` (auto-updates after every run)
+   - **Downloadable files**: open the completed run → **Artifacts** section → download HTML/CSV/JSON
 
-## Data Sources
+**One-time setup** for the HTML page: repo **Settings → Pages** → Source = "Deploy from a branch" → branch = `gh-pages` / `(root)` → Save. (The `gh-pages` branch is created automatically the first time the workflow runs — just re-check this setting after your first run.)
 
-The screener uses **[Polygon.io](https://polygon.io)** for:
-- Real-time and delayed quotes
-- Options chains (bid/ask/IV/delta/OI/volume)
-- Historical price data (for HV and MA calculations)
-- Options snapshots (IV surface)
-
-And **[Earnings Whispers](https://www.earningswhispers.com)** or **Polygon earnings calendar** for confirmed earnings dates.
-
-### API Keys Required
-
-```
-POLYGON_API_KEY=your_key_here
-```
-
-Free tier works for end-of-day data. Starter tier ($29/mo) enables real-time options chains.
-
----
-
-## Installation
+### Option B — On your own computer
 
 ```bash
 git clone https://github.com/YOUR_USERNAME/csp-screener.git
 cd csp-screener
 pip install -r requirements.txt
-cp config/config.example.yaml config/config.yaml
-# Add your API key to config/config.yaml
-python src/main.py
+cp .env.example .env          # edit ACCOUNT_SIZE etc.
+python run.py                  # quick scan, ~40 tickers, ~2 min
+```
+
+Both options run identical code — same filters, same scoring, same output format.
+
+---
+
+## What it does
+
+1. Fetches live option chains, prices, volume, IV, and earnings dates for 40–100 tickers
+2. Applies hard rejection filters (delta, IV rank, earnings distance, spread, OI, collateral)
+3. Scores every passing contract across 8 weighted factors
+4. Ranks by Final Score, breaks ties with Juice Score
+5. Outputs an HTML report (`output/report.html`) and a Rich terminal table
+6. Saves CSV and JSON for further analysis
+
+---
+
+## Scoring framework
+
+| Factor | Formula | Weight |
+|--------|---------|--------|
+| Volatility Risk Premium | IV − HV | 25% |
+| Annualized Yield | (Premium/Strike) × (365/DTE) | 20% |
+| Earnings Distance | Days to confirmed earnings | 15% |
+| Delta Score | \|Δ\| | 10% |
+| IV Rank (proxy) | Rolling HV percentile | 10% |
+| Expected Move Cushion | ((Spot−Strike)−ExpMove)/Spot | 10% |
+| Liquidity | OI + spread + volume composite | 5% |
+| Trend | 50d/200d MA conditions | 5% |
+
+**Juice Score** (tiebreaker): `(VRP × AnnYield × ProbOTM) / |Delta|`
+
+---
+
+## CLI options (Option B)
+
+```
+--tier       quick | full | tier1 | tier2 | tier3   (default: quick)
+--top        N candidates to show                    (default: 10)
+--account    Account size in USD                     (default: .env)
+--workers    Parallel fetch threads                  (default: 8)
+--no-csv     Skip CSV output
+--no-json    Skip JSON output
+--no-html    Skip HTML report
+--no-commentary  Table only, skip per-trade text
 ```
 
 ---
 
 ## Output
 
-```
-══════════════════════════════════════════════════════════════════
- CSP SCREENER  |  2025-01-15 09:32:14 ET  |  VIX: 18.42  NORMAL
-══════════════════════════════════════════════════════════════════
- Scanned: 1,247 tickers  |  Passed filters: 34  |  Showing Top 10
-══════════════════════════════════════════════════════════════════
+### HTML report (`output/report.html`)
+Self-contained file — open directly in any browser. Includes the meta bar (VIX, regime, scan stats), the full ranked table, and a per-trade commentary card for every candidate. Works in light and dark mode automatically.
 
-Rank  Ticker  Strike    DTE  Premium  Delta   IVR   VRP  AnnYield  EarnDays  ProbOTM  BreakEven  Collateral  JuiceScore  FinalScore  Risk
-───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
-   1  NVDA    $195.00    28   $4.12  -0.158  68.4  +9.3    27.1%        52     84.2%    $190.88      $19,500      0.1821       87.3    Medium
-   2  AMD     $138.00    28   $3.05  -0.147  61.2  +8.1    24.9%        44     85.3%    $134.95      $13,800      0.1654       84.1    Low
-...
-
-Results saved to output/csp_screen_2025-01-15.csv
+### Terminal table (Rich)
 ```
+  #  Ticker  Strike   DTE  Premium  Delta    IV%   HV%    VRP    IVR*  Yield/yr  Earn  ProbOTM  BrkEven  Collat.  Juice  Score  Risk
+  1  NVDA    $185.00   30   $3.42   -0.15   48.2%  38.1%  +10.1  61     26.3%    52    85.0%    $181.58  $18,500  0.112   81.5  Medium
+```
+
+### Files saved to `output/`
+- `report.html` — fixed filename, always overwritten with the latest run
+- `csp_results_YYYYMMDD_HHMMSS.csv` — timestamped, importable to Excel
+- `csp_results_YYYYMMDD_HHMMSS.json` — timestamped, includes score breakdown
 
 ---
 
-## Project Structure
+## Data source notes
+
+| Field | Source | Notes |
+|-------|--------|-------|
+| Stock price | yfinance (Yahoo Finance) | ~15 min delayed |
+| Options chain | yfinance | Bid/ask/OI/IV from Yahoo |
+| IV | yfinance `impliedVolatility` | Per-contract |
+| HV30 | Computed from 2y daily OHLCV | 30-day log-return std × √252 |
+| IV Rank | **HV proxy** — rolling 30d HV percentile over 1 year | ⚠️ Not true IV Rank |
+| Earnings date | yfinance `calendar` | Not always populated — verify |
+| 50d / 200d MA | Computed from price history | |
+| VIX | yfinance `^VIX` | Used for macro regime check |
+
+### ⚠️ IVR proxy note
+True IV Rank requires a database of historical option IV (52-week IV high and low). yfinance doesn't provide this. The screener uses a **rolling realized-HV percentile** as a proxy. For production-grade IVR, swap `screener/data.py` for a Tradier or Polygon options-history call.
+
+### Earnings dates
+yfinance calendar data is often missing or approximate. **Always verify the next earnings date before entering a trade.**
+
+---
+
+## Project structure
 
 ```
 csp-screener/
-├── src/
-│   ├── main.py              # Entry point
-│   ├── screener.py          # Core screening logic
-│   ├── data/
-│   │   ├── polygon_client.py    # Polygon.io API wrapper
-│   │   ├── universe.py          # Ticker universe management
-│   │   └── earnings.py          # Earnings calendar fetcher
-│   ├── scoring/
-│   │   ├── filters.py           # Hard rejection filters
-│   │   ├── factors.py           # 8 scoring factors
-│   │   ├── regime.py            # VIX regime detection
-│   │   └── juice.py             # Juice Score + final ranking
-│   └── output/
-│       ├── formatter.py         # Terminal table output
-│       └── exporter.py          # CSV/JSON export
-├── config/
-│   ├── config.example.yaml  # Config template
-│   └── universe_lists.py    # SP500/NDX100/R1000 ticker lists
-├── tests/
-│   ├── test_filters.py
-│   ├── test_scoring.py
-│   └── test_data_mock.py
-├── output/                  # Generated output files (gitignored)
-├── docs/
-│   └── scoring_spec.md      # Full scoring methodology
+├── .github/
+│   └── workflows/
+│       └── run-screener.yml   # GitHub Actions — manual "Run workflow" button
+├── run.py                     # Entry point
 ├── requirements.txt
-└── README.md
+├── .env.example                # Copy to .env for local runs
+├── screener/
+│   ├── __init__.py
+│   ├── universe.py             # Ticker lists (Tier 1/2/3)
+│   ├── data.py                  # yfinance fetcher + Black-Scholes helpers
+│   ├── scorer.py                 # Hard filters + scoring engine
+│   ├── output.py                  # Rich terminal output + CSV/JSON export
+│   └── html_report.py              # Self-contained HTML report generator
+├── output/                     # Results saved here (gitignored except via Actions)
+└── tests/
+    └── test_scorer.py          # 36 unit tests
 ```
 
 ---
 
-## Configuration
+## Hard filter reference
 
-Edit `config/config.yaml`:
+| Filter | Default | Config key |
+|--------|---------|-----------|
+| Stock price | ≥ $20 | — |
+| Avg daily volume | ≥ 2M shares | `MIN_AVG_VOLUME` |
+| Option OI (contract) | ≥ 1,000 | `MIN_OI` |
+| Bid-ask spread | ≤ 7% of mid | `MAX_SPREAD_PCT` |
+| IV Rank proxy | ≥ 30 | `MIN_IVR` |
+| Delta | ≤ 0.25 | — |
+| Days to earnings | ≥ 14 | `MIN_EARNINGS_DAYS` |
+| Prob OTM | ≥ 75% | `MIN_PROB_OTM` |
+| DTE window | 21–45 days | `TARGET_DTE_MIN/MAX` |
+| Annual yield | ≥ 15% | `MIN_ANNUAL_YIELD` |
+| Collateral | ≤ 25% of account | `MAX_POSITION_PCT` |
 
-```yaml
-api:
-  polygon_key: "YOUR_KEY_HERE"
-  data_mode: "live"          # live | delayed | backtest
+---
 
-account:
-  size: 50000                # Your account size in USD
-  max_position_pct: 0.25     # Max 25% per position
+## Running tests
 
-filters:
-  min_stock_price: 20
-  min_avg_volume: 2000000
-  min_option_oi: 1000
-  max_spread_pct: 0.07
-  min_ivr: 30
-  max_delta: 0.25
-  min_earnings_days: 14
-  min_prob_otm: 0.75
-  dte_min: 7
-  dte_max: 60
-
-scoring:
-  vrp_weight: 0.25
-  yield_weight: 0.20
-  earnings_weight: 0.15
-  delta_weight: 0.10
-  ivr_weight: 0.10
-  cushion_weight: 0.10
-  liquidity_weight: 0.05
-  trend_weight: 0.05
-
-output:
-  top_n: 10
-  save_csv: true
-  save_json: false
-  output_dir: "./output"
+```bash
+pip install pytest
+python -m pytest tests/ -v
 ```
 
----
-
-## Scoring Methodology
-
-Full specification in [`docs/scoring_spec.md`](docs/scoring_spec.md).
-
-| Factor | Formula | Weight |
-|--------|---------|--------|
-| VRP | IV − HV | 25% |
-| Annualized Yield | (Premium/Strike) × (365/DTE) | 20% |
-| Earnings Distance | Days to confirmed earnings | 15% |
-| Delta Score | \|Delta\| | 10% |
-| IV Rank | 52-week IV percentile | 10% |
-| Expected Move Cushion | ((Price−Strike)−ExpMove)/Price | 10% |
-| Liquidity | OI + Spread + Volume composite | 5% |
-| Trend | 50/200 MA conditions | 5% |
-
----
-
-## Roadmap
-
-- [ ] Polygon.io live data integration
-- [ ] Hard filter pipeline
-- [ ] 8-factor scoring engine
-- [ ] VIX regime detection
-- [ ] Terminal output + CSV export
-- [ ] Backtest mode (historical IV data)
-- [ ] Tastytrade API alternative data source
-- [ ] Web dashboard (Streamlit)
-- [ ] Email/Slack alerts for new opportunities
+36/36 tests covering all scoring functions.
 
 ---
 
 ## Disclaimer
 
-This tool is for research and educational purposes. It does not constitute financial advice. All trading involves risk. Verify all data independently before committing capital.
-
----
-
-## License
-
-MIT
+This tool is for research and educational purposes. Nothing here is financial advice. Options trading involves substantial risk. Always verify data independently before committing capital.
