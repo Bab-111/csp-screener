@@ -251,6 +251,14 @@ def passes_hard_filters(
     if row.get("mid", 0) <= 0:
         return False, "zero bid"
 
+    # VRP floor: if IV is below realized HV, the seller has no actual
+    # volatility edge — the market isn't overpricing risk, it's underpricing
+    # it. Including these would let "Juice Score" arithmetic mask trades
+    # that are structurally backwards (selling cheap, not expensive, vol).
+    vrp = row.get("vrp", 0) or 0
+    if vrp <= 0:
+        return False, f"VRP {vrp*100:+.1f}pp ≤ 0 — IV below realized vol, no seller's edge"
+
     return True, ""
 
 
