@@ -107,6 +107,7 @@ def main():
         "max_spread_pct":     float(os.getenv("MAX_SPREAD_PCT", 0.07)),
         "min_earnings_days":  int(os.getenv("MIN_EARNINGS_DAYS", 14)),
         "top_n":              args.top or int(os.getenv("TOP_N", 10)),
+        "max_per_ticker":     int(os.getenv("MAX_PER_TICKER", 1)),
         "output_dir":         os.getenv("OUTPUT_DIR", "output"),
         "save_csv":           os.getenv("SAVE_CSV", "true").lower() == "true",
         "save_json":          os.getenv("SAVE_JSON", "true").lower() == "true",
@@ -151,12 +152,26 @@ def main():
                     all_candidates.extend(candidates)
                 progress.advance(task)
 
-    # ── Rank & truncate ────────────────────────────────────────────────────
+    # ── Rank, diversify, & truncate ─────────────────────────────────────────
     all_candidates.sort(
         key=lambda c: (c.final_score, c.juice_score),
         reverse=True,
     )
-    top = all_candidates[:config["top_n"]]
+
+    # Keep only the single best-scoring contract per ticker. Without this,
+    # one ticker with several strikes passing filters (or a data anomaly
+    # inflating its score) can crowd out every other name in the Top N —
+    # which defeats the purpose of a diversified candidate list.
+    max_per_ticker = config.get("max_per_ticker", 1)
+    seen_count: dict[str, int] = {}
+    diversified = []
+    for c in all_candidates:
+        n = seen_count.get(c.ticker, 0)
+        if n < max_per_ticker:
+            diversified.append(c)
+            seen_count[c.ticker] = n + 1
+
+    top = diversified[:config["top_n"]]
 
     # ── Output ─────────────────────────────────────────────────────────────
     print_header(
