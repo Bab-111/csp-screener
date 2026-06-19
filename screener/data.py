@@ -119,9 +119,27 @@ class StockData:
             self.ma50  = float(closes.iloc[-50:].mean())  if len(closes) >= 50  else 0.0
             self.ma200 = float(closes.iloc[-200:].mean()) if len(closes) >= 200 else 0.0
 
-            # ── 3. 30-day realized HV ──────────────────────────────────────
+            # ── 3. 30-day realized HV (outlier-guarded) ─────────────────────
             log_returns = np.log(closes / closes.shift(1)).dropna()
-            self.hv30 = float(log_returns.iloc[-30:].std() * np.sqrt(TRADING_DAYS_YEAR))
+
+            # Guard against bad ticks / split-adjustment glitches: a single
+            # day-over-day move beyond ±35% is almost never real for a
+            # liquid large/mid-cap and usually signals a data error
+            # (unadjusted split, halt/reopen gap, provider glitch).
+            # Clip rather than drop so the window length stays intact.
+            CLIP_RETURN = 0.35
+            clean_returns = log_returns.clip(lower=-CLIP_RETURN, upper=CLIP_RETURN)
+
+            self.hv30 = float(clean_returns.iloc[-30:].std() * np.sqrt(TRADING_DAYS_YEAR))
+
+            # Sanity ceiling: even the most volatile liquid large/mid-caps
+            # rarely sustain >150% annualized realized vol. If we land
+            # above that, the underlying data is suspect — mark invalid
+            # rather than publish a number that will silently distort
+            # every downstream score (VRP, IVR, cushion, etc).
+            if self.hv30 > 1.50 or self.hv30 <= 0 or not np.isfinite(self.hv30):
+                self.error = f"HV30 {self.hv30:.0%} outside sane range — likely bad price data"
+                return self
 
             # ── 4. IV Rank proxy ───────────────────────────────────────────
             # True IVR needs 1y of option IV history which yfinance doesn't
@@ -129,7 +147,7 @@ class StockData:
             # and rank current HV within that range.
             # This is a PROXY — stated as such in output.
             rolling_hv = (
-                log_returns.rolling(30)
+                clean_returns.rolling(30)
                 .std()
                 .dropna()
                 .iloc[-252:]
@@ -207,7 +225,18 @@ class StockData:
             puts["spread_pct"] = (puts["ask"] - puts["bid"]) / puts["mid"].replace(0, np.nan)
 
             # Compute IV from yfinance (already provided as impliedVolatility)
+            # yfinance back-solves IV from stale/wide quotes on thin strikes,
+            # which can produce implausible values (e.g. 90%+ on a mega-cap
+            # blue chip). Clip to a sane band rather than trust it blindly —
+            # contracts outside this band are dropped, not silently scored.
             puts["iv"] = puts["impliedVolatility"].fillna(0)
+            IV_SANE_MIN, IV_SANE_MAX = 0.05, 1.50
+            puts = puts[
+                (puts["iv"] >= IV_SANE_MIN) & (puts["iv"] <= IV_SANE_MAX)
+            ].copy()
+            if puts.empty:
+                self.error = "all contracts had implausible IV — likely thin/stale quotes"
+                return self
 
             # Compute delta via B-S (yfinance doesn't always provide Greeks)
             T = best_dte / 365.0
