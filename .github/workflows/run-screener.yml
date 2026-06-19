@@ -1,0 +1,93 @@
+name: Run CSP Screener
+
+# This workflow gives you a "Run workflow" button on the GitHub Actions tab.
+# Click it, choose your settings, and GitHub runs the screener on a free
+# cloud machine — nothing to install on your computer.
+
+on:
+  workflow_dispatch:          # <-- this is the manual "Run workflow" button
+    inputs:
+      tier:
+        description: "Universe to scan"
+        required: true
+        default: "quick"
+        type: choice
+        options:
+          - quick
+          - full
+          - tier1
+          - tier2
+          - tier3
+      top_n:
+        description: "Number of top candidates to return"
+        required: true
+        default: "10"
+        type: string
+      account_size:
+        description: "Account size in USD"
+        required: true
+        default: "50000"
+        type: string
+
+permissions:
+  contents: write   # allows the workflow to commit the report back to the repo
+
+jobs:
+  screen:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Check out repo
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: "pip"
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run the screener
+        run: |
+          python run.py \
+            --tier "${{ github.event.inputs.tier }}" \
+            --top "${{ github.event.inputs.top_n }}" \
+            --account "${{ github.event.inputs.account_size }}" \
+            --no-commentary
+        env:
+          PYTHONUNBUFFERED: "1"
+
+      - name: Upload HTML report as a downloadable artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: csp-report-${{ github.run_number }}
+          path: output/report.html
+          retention-days: 30
+
+      - name: Upload CSV/JSON results as artifacts
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: csp-data-${{ github.run_number }}
+          path: |
+            output/*.csv
+            output/*.json
+          retention-days: 30
+          if-no-files-found: ignore
+
+      - name: Publish report to GitHub Pages (latest run)
+        run: |
+          mkdir -p public
+          cp output/report.html public/index.html
+        if: always()
+
+      - name: Deploy to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v3
+        if: always()
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./public
+          keep_files: false
