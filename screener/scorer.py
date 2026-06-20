@@ -184,7 +184,13 @@ class Candidate:
     def _risk(self) -> str:
         d = abs(self.delta)
         p = self.prob_otm
-        e = self.earnings_days or 0
+        # earnings_days should never be None at this point — unconfirmed
+        # earnings are now rejected by the hard filter before a Candidate
+        # is ever built. If this fires anyway, treat it as the most
+        # conservative case rather than silently defaulting to 0.
+        if self.earnings_days is None:
+            return "High"
+        e = self.earnings_days
         if d < 0.15 and p > 0.85 and e > 30 and 40 <= self.ivr <= 70:
             return "Low"
         if d <= 0.20 and p >= 0.80 and e >= 14:
@@ -230,7 +236,14 @@ def passes_hard_filters(
     if delta_abs > 0.25:
         return False, f"|delta| {delta_abs:.2f} > 0.25"
 
-    if earnings_days is not None and earnings_days < min_earnings_days:
+    # Unconfirmed earnings date is NOT the same as "earnings far away" —
+    # treating unknown as safe is exactly backwards. If we can't confirm
+    # the date, we can't confirm the position is safe from an earnings
+    # gap, so it must be excluded rather than silently scored as neutral.
+    if earnings_days is None:
+        return False, "earnings date unconfirmed — cannot verify safety, excluded"
+
+    if earnings_days < min_earnings_days:
         return False, f"earnings in {earnings_days}d < {min_earnings_days}d"
 
     prob_otm = 1 - delta_abs
