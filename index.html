@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>CSP Screener Report — 2026-06-20 08:00:17</title>
+<title>CSP Screener Report — 2026-06-20 08:13:04</title>
 <style>
   :root {
     --bg: #ffffff; --bg2: #f7f6f3; --text: #1a1a18; --text2: #5f5e5a;
@@ -66,7 +66,14 @@
   .card-section p { font-size: 13px; margin: 0 0 4px; }
   .warn { color: #A32D2D; font-size: 12px; font-weight: 600; margin-top: 4px; }
 
-  .empty { padding: 3rem; text-align: center; color: var(--text2); background: var(--bg2); border-radius: 10px; }
+  .empty { padding: 2rem; text-align: center; color: var(--text2); background: var(--bg2); border-radius: 10px 10px 0 0; }
+  .reject-box { background: var(--bg2); border-radius: 0 0 10px 10px; padding: 1.25rem 1.5rem 1.5rem; border-top: 1px solid var(--border); }
+  .reject-box h3 { font-size: 14px; margin: 0 0 6px; }
+  .reject-intro { font-size: 12px; color: var(--text2); margin: 0 0 1rem; }
+  .reject-row { display: flex; gap: 10px; padding: 5px 0; font-size: 13px; border-bottom: 1px solid var(--border); }
+  .reject-row:last-child { border-bottom: none; }
+  .reject-count { color: var(--accent); font-weight: 600; min-width: 38px; font-variant-numeric: tabular-nums; }
+  .reject-label { color: var(--text); }
 
   details.errors { margin-top: 2rem; font-size: 13px; color: var(--text2); }
   details.errors summary { cursor: pointer; padding: 8px 0; }
@@ -85,10 +92,10 @@
 <body>
 <div class="wrap">
   <h1>Institutional CSP Screener Report</h1>
-  <div class="subtitle">Generated 2026-06-20 08:00:17</div>
+  <div class="subtitle">Generated 2026-06-20 08:13:04</div>
 
   <div class="meta-bar regime-normal">
-    <div class="meta-item"><span class="meta-label">VIX</span><span class="meta-value">16.40</span></div>
+    <div class="meta-item"><span class="meta-label">VIX</span><span class="meta-value">16.78</span></div>
     <div class="meta-item"><span class="meta-label">Regime</span><span class="meta-value">Normal</span></div>
     <div class="meta-item"><span class="meta-label">Tickers scanned</span><span class="meta-value">38</span></div>
     <div class="meta-item"><span class="meta-label">Contracts passed</span><span class="meta-value">0</span></div>
@@ -96,7 +103,12 @@
     <div class="meta-item"><span class="meta-label">Showing</span><span class="meta-value">Top 0</span></div>
   </div>
 
-  <div class="empty">No candidates passed all filters on this run.</div>
+  <div class="empty">No candidates passed all filters on this run. This can be a legitimate finding on a calm/low-volatility day — see the breakdown below for exactly why.</div>
+        <div class="reject-box">
+          <h3>Why nothing qualified</h3>
+          <p class="reject-intro">Every contract that was evaluated failed at least one hard filter below. Counts are per-contract, not per-ticker — one ticker can contribute several rejected strikes.</p>
+          <div class="reject-row"><span class="reject-count">523×</span><span class="reject-label">open interest too low</span></div><div class="reject-row"><span class="reject-count">413×</span><span class="reject-label">bid-ask spread too wide</span></div><div class="reject-row"><span class="reject-count">194×</span><span class="reject-label">earnings date unconfirmed / too close</span></div><div class="reject-row"><span class="reject-count">81×</span><span class="reject-label">delta outside target range</span></div><div class="reject-row"><span class="reject-count">1×</span><span class="reject-label">IV Rank too low</span></div>
+        </div>
 
   
 
