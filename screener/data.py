@@ -253,6 +253,16 @@ class StockData:
             puts["vrp"] = puts["iv"] - self.hv30
 
             # Expected move and cushion
+            #
+            # NOTE: "Cushion" here measures distance from the strike to the
+            # EDGE OF THE MARKET'S OWN EXPECTED MOVE — not simple distance
+            # from spot or from break-even. A negative value means the
+            # strike sits INSIDE the option market's own 1-sigma expected
+            # range, even if it looks comfortably below spot in dollar terms.
+            # This is intentionally the more conservative of two common
+            # "cushion" definitions in options trading:
+            #   (a) distance from spot/breakeven  — simpler, more lenient
+            #   (b) distance from expected move    — what we use, stricter
             puts["exp_move"] = self.price * puts["iv"] * np.sqrt(T)
             puts["cushion"]  = (
                 (self.price - puts["strike"]) - puts["exp_move"]
