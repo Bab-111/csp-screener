@@ -279,13 +279,15 @@ def passes_hard_filters(
 def screen_ticker(
     sd: StockData,
     config: dict,
-) -> list[Candidate]:
+) -> tuple[list[Candidate], list[str]]:
     """
     Given a populated StockData, apply all filters and return
-    a list of Candidate objects (one per valid strike).
+    (candidates, rejection_reasons) — one reason string per
+    contract that failed a hard filter, so a 0-result run can
+    be diagnosed instead of just reported as empty.
     """
     if not sd.valid or sd.options_df is None:
-        return []
+        return [], [f"{sd.ticker}: {sd.error or 'fetch failed'}"]
 
     today = datetime.date.today()
     earnings_days: Optional[int] = None
@@ -295,13 +297,14 @@ def screen_ticker(
             earnings_days = None   # past earnings, ignore
 
     candidates = []
+    rejections = []
 
     for _, row in sd.options_df.iterrows():
         ok, reason = passes_hard_filters(
             row, sd, earnings_days,
             account_size      = config.get("account_size", 50_000),
             max_position_pct  = config.get("max_position_pct", 0.25),
-            min_ivr           = config.get("min_ivr", 30),
+            min_ivr            = config.get("min_ivr", 30),
             min_prob_otm      = config.get("min_prob_otm", 0.75),
             min_annual_yield  = config.get("min_annual_yield", 0.15),
             min_avg_volume    = config.get("min_avg_volume", 2_000_000),
@@ -310,6 +313,7 @@ def screen_ticker(
             min_earnings_days = config.get("min_earnings_days", 14),
         )
         if not ok:
+            rejections.append(f"{sd.ticker} ${row['strike']:.2f}: {reason}")
             continue
 
         delta     = float(row.get("bs_delta", 0) or 0)
@@ -346,4 +350,4 @@ def screen_ticker(
         c.compute_score()
         candidates.append(c)
 
-    return candidates
+    return candidates, rejections
