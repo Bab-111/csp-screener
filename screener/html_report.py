@@ -29,11 +29,13 @@ def generate_html_report(
     passed: int,
     account_size: float,
     errors: dict | None = None,
+    rejection_summary: dict | None = None,
 ) -> str:
     """Returns a complete HTML document as a string."""
 
     now = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     errors = errors or {}
+    rejection_summary = rejection_summary or {}
 
     # ── Table rows ──────────────────────────────────────────────────────────
     rows_html = ""
@@ -135,9 +137,29 @@ def generate_html_report(
           <ul>{error_list}</ul>
         </details>"""
 
+    rejection_html = ""
+    if rejection_summary:
+        sorted_reasons = sorted(rejection_summary.items(), key=lambda x: -x[1])
+        rows = "".join(
+            f'<div class="reject-row"><span class="reject-count">{count}×</span>'
+            f'<span class="reject-label">{reason}</span></div>'
+            for reason, count in sorted_reasons
+        )
+        rejection_html = f"""
+        <div class="reject-box">
+          <h3>Why nothing qualified</h3>
+          <p class="reject-intro">Every contract that was evaluated failed at least one hard filter below. Counts are per-contract, not per-ticker — one ticker can contribute several rejected strikes.</p>
+          {rows}
+        </div>"""
+
     empty_state = ""
     if not candidates:
-        empty_state = '<div class="empty">No candidates passed all filters on this run.</div>'
+        empty_state = (
+            '<div class="empty">No candidates passed all filters on this run. '
+            'This can be a legitimate finding on a calm/low-volatility day — '
+            'see the breakdown below for exactly why.</div>'
+            + rejection_html
+        )
 
     regime_class = "regime-override" if "Override" in regime else ("regime-elevated" if "Elevated" in regime else "regime-normal")
 
@@ -209,7 +231,14 @@ def generate_html_report(
   .card-section p {{ font-size: 13px; margin: 0 0 4px; }}
   .warn {{ color: #A32D2D; font-size: 12px; font-weight: 600; margin-top: 4px; }}
 
-  .empty {{ padding: 3rem; text-align: center; color: var(--text2); background: var(--bg2); border-radius: 10px; }}
+  .empty {{ padding: 2rem; text-align: center; color: var(--text2); background: var(--bg2); border-radius: 10px 10px 0 0; }}
+  .reject-box {{ background: var(--bg2); border-radius: 0 0 10px 10px; padding: 1.25rem 1.5rem 1.5rem; border-top: 1px solid var(--border); }}
+  .reject-box h3 {{ font-size: 14px; margin: 0 0 6px; }}
+  .reject-intro {{ font-size: 12px; color: var(--text2); margin: 0 0 1rem; }}
+  .reject-row {{ display: flex; gap: 10px; padding: 5px 0; font-size: 13px; border-bottom: 1px solid var(--border); }}
+  .reject-row:last-child {{ border-bottom: none; }}
+  .reject-count {{ color: var(--accent); font-weight: 600; min-width: 38px; font-variant-numeric: tabular-nums; }}
+  .reject-label {{ color: var(--text); }}
 
   details.errors {{ margin-top: 2rem; font-size: 13px; color: var(--text2); }}
   details.errors summary {{ cursor: pointer; padding: 8px 0; }}
@@ -271,7 +300,11 @@ def save_html_report(
     account_size: float,
     path: str,
     errors: dict | None = None,
+    rejection_summary: dict | None = None,
 ) -> None:
-    html = generate_html_report(candidates, vix, regime, scanned, passed, account_size, errors)
+    html = generate_html_report(
+        candidates, vix, regime, scanned, passed, account_size,
+        errors, rejection_summary,
+    )
     Path(path).parent.mkdir(parents=True, exist_ok=True)
     Path(path).write_text(html, encoding="utf-8")
