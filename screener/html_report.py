@@ -104,7 +104,7 @@ def generate_html_report(
             <div class="card-section">
               <h4>Structure</h4>
               <p>Spot ${c.price:.2f} · Premium ${c.premium:.2f} · Annualized yield {c.ann_yield*100:.1f}%</p>
-              <p>Expected move ${c.exp_move:.2f} · Cushion {c.cushion*100:.1f}% · Break-even ${c.breakeven:.2f}</p>
+              <p>Expected move ${c.exp_move:.2f} · Cushion vs. expected move {c.cushion*100:.1f}% (negative = strike inside the market's expected range) · Break-even ${c.breakeven:.2f}</p>
             </div>
             <div class="card-section">
               <h4>Earnings</h4>
