@@ -59,19 +59,19 @@ def fetch_vix() -> tuple[float, str]:
 def process_ticker(
     ticker: str,
     config: dict,
-) -> tuple[str, list, str | None]:
-    """Fetch data + screen one ticker. Returns (ticker, candidates, error)."""
+) -> tuple[str, list, list, str | None]:
+    """Fetch data + screen one ticker. Returns (ticker, candidates, rejections, fetch_error)."""
     try:
         sd = StockData(ticker).fetch(
             dte_min=config["target_dte_min"],
             dte_max=config["target_dte_max"],
         )
         if not sd.valid:
-            return ticker, [], sd.error
-        candidates = screen_ticker(sd, config)
-        return ticker, candidates, None
+            return ticker, [], [], sd.error
+        candidates, rejections = screen_ticker(sd, config)
+        return ticker, candidates, rejections, None
     except Exception as e:
-        return ticker, [], str(e)
+        return ticker, [], [], str(e)
 
 
 # ── Main ───────────────────────────────────────────────────────────────────────
@@ -129,6 +129,7 @@ def main():
     # ── Parallel fetch + screen ────────────────────────────────────────────
     all_candidates = []
     errors = {}
+    all_rejections = []
 
     with Progress(
         SpinnerColumn(),
@@ -145,11 +146,12 @@ def main():
                 for t in tickers
             }
             for future in as_completed(futures):
-                ticker, candidates, error = future.result()
+                ticker, candidates, rejections, error = future.result()
                 if error:
                     errors[ticker] = error
                 else:
                     all_candidates.extend(candidates)
+                    all_rejections.extend(rejections)
                 progress.advance(task)
 
     # ── Rank, diversify, & truncate ─────────────────────────────────────────
@@ -173,6 +175,38 @@ def main():
 
     top = diversified[:config["top_n"]]
 
+    # ── Aggregate rejection reasons for diagnosis ────────────────────────────
+    # Bucket by the filter that caused the rejection (the text before the
+    # first colon-delimited clause) so "0 results" becomes a readable
+    # breakdown instead of a wall of per-contract text.
+    rejection_summary: dict[str, int] = {}
+    for r in all_rejections:
+        # r looks like "TICKER $strike: <reason text>"
+        reason_text = r.split(":", 1)[-1].strip() if ":" in r else r
+        # Collapse to the leading clause (the filter name), drop the
+        # specific numbers so similar rejections group together
+        key = reason_text.split(" ", 1)[0] if reason_text else "unknown"
+        # Use a slightly longer key for readability on a few common cases
+        if "earnings" in reason_text.lower():
+            key = "earnings date unconfirmed / too close"
+        elif "VRP" in reason_text:
+            key = "no volatility edge (IV below realized vol)"
+        elif "delta" in reason_text.lower():
+            key = "delta outside target range"
+        elif "spread" in reason_text.lower():
+            key = "bid-ask spread too wide"
+        elif "OI" in reason_text:
+            key = "open interest too low"
+        elif "IVR" in reason_text:
+            key = "IV Rank too low"
+        elif "yield" in reason_text.lower():
+            key = "annualized yield too low"
+        elif "collateral" in reason_text.lower():
+            key = "position too large for account"
+        elif "prob OTM" in reason_text:
+            key = "probability OTM too low"
+        rejection_summary[key] = rejection_summary.get(key, 0) + 1
+
     # ── Output ─────────────────────────────────────────────────────────────
     print_header(
         vix_est  = vix,
@@ -183,10 +217,15 @@ def main():
 
     if not top:
         console.print("[red bold]No candidates passed all filters.[/red bold]")
-        console.print(
-            f"[dim]Tickers with errors ({len(errors)}): "
-            f"{', '.join(list(errors.keys())[:10])}{'...' if len(errors) > 10 else ''}[/dim]"
-        )
+        if rejection_summary:
+            console.print("\n[bold]Why nothing qualified:[/bold]")
+            for reason, count in sorted(rejection_summary.items(), key=lambda x: -x[1]):
+                console.print(f"  [dim]{count:>4}x[/dim]  {reason}")
+        if errors:
+            console.print(
+                f"\n[dim]Tickers with errors ({len(errors)}): "
+                f"{', '.join(list(errors.keys())[:10])}{'...' if len(errors) > 10 else ''}[/dim]"
+            )
     else:
         print_results_table(top)
         if not args.no_commentary:
@@ -206,14 +245,15 @@ def main():
     if config["save_html"] and not args.no_html:
         html_path = f"{out_dir}/report.html"   # fixed filename — easy to find/link
         save_html_report(
-            candidates    = top,
-            vix           = vix,
-            regime        = regime,
-            scanned       = len(tickers),
-            passed        = len(all_candidates),
-            account_size  = config["account_size"],
-            path          = html_path,
-            errors        = errors,
+            candidates         = top,
+            vix                = vix,
+            regime             = regime,
+            scanned            = len(tickers),
+            passed             = len(all_candidates),
+            account_size       = config["account_size"],
+            path               = html_path,
+            errors             = errors,
+            rejection_summary  = rejection_summary,
         )
         console.print(f"  [dim]HTML report saved → {html_path}[/dim]")
 
