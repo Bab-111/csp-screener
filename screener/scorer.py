@@ -54,9 +54,15 @@ def score_ann_yield(y: float) -> float:
     return 100.0
 
 def score_earnings(days: Optional[int]) -> float:
-    if days is None or days < 14:  return 0.0
-    if days < 21:                  return 40.0
-    if days < 45:                  return 70.0
+    """
+    Score earnings distance. None = unconfirmed = conservative middle score.
+    We don't treat unconfirmed as "safe" (score 100) or "imminent" (score 0)
+    — we use a conservative 30 to reflect genuine uncertainty.
+    """
+    if days is None:   return 30.0   # unconfirmed — penalised but not rejected
+    if days < 14:      return 0.0    # hard reject territory (also filtered above)
+    if days < 21:      return 40.0
+    if days < 45:      return 70.0
     return 100.0
 
 def score_delta(delta_abs: float) -> float:
@@ -184,13 +190,14 @@ class Candidate:
     def _risk(self) -> str:
         d = abs(self.delta)
         p = self.prob_otm
-        # earnings_days should never be None at this point — unconfirmed
-        # earnings are now rejected by the hard filter before a Candidate
-        # is ever built. If this fires anyway, treat it as the most
-        # conservative case rather than silently defaulting to 0.
-        if self.earnings_days is None:
-            return "High"
-        e = self.earnings_days
+        e = self.earnings_days  # None = unconfirmed
+
+        # Unconfirmed earnings: can't be Low (too uncertain), can be Medium
+        if e is None:
+            if d <= 0.20 and p >= 0.80:
+                return "Medium ⚠ earn unconfirmed"
+            return "High ⚠ earn unconfirmed"
+
         if d < 0.15 and p > 0.85 and e > 30 and 40 <= self.ivr <= 70:
             return "Low"
         if d <= 0.20 and p >= 0.80 and e >= 14:
@@ -236,15 +243,15 @@ def passes_hard_filters(
     if delta_abs > 0.25:
         return False, f"|delta| {delta_abs:.2f} > 0.25"
 
-    # Unconfirmed earnings date is NOT the same as "earnings far away" —
-    # treating unknown as safe is exactly backwards. If we can't confirm
-    # the date, we can't confirm the position is safe from an earnings
-    # gap, so it must be excluded rather than silently scored as neutral.
-    if earnings_days is None:
-        return False, "earnings date unconfirmed — cannot verify safety, excluded"
-
-    if earnings_days < min_earnings_days:
-        return False, f"earnings in {earnings_days}d < {min_earnings_days}d"
+    # Earnings date handling:
+    # - Confirmed date within 14 days → hard reject (binary event risk)
+    # - Confirmed date safely outside → pass (scored normally)
+    # - Unconfirmed → pass with warning flag (scored conservatively)
+    #   yfinance earnings calendar is unreliable; hard-rejecting every
+    #   ticker with a missing date eliminates most of the universe and
+    #   conflates "yfinance didn't return the date" with "earnings imminent"
+    if earnings_days is not None and earnings_days < min_earnings_days:
+        return False, f"earnings in {earnings_days}d < {min_earnings_days}d (confirmed)"
 
     prob_otm = 1 - delta_abs
     if prob_otm < min_prob_otm:
@@ -308,8 +315,8 @@ def screen_ticker(
             min_prob_otm      = config.get("min_prob_otm", 0.75),
             min_annual_yield  = config.get("min_annual_yield", 0.15),
             min_avg_volume    = config.get("min_avg_volume", 2_000_000),
-            min_oi            = config.get("min_oi", 1000),
-            max_spread_pct    = config.get("max_spread_pct", 0.07),
+            min_oi            = config.get("min_oi", 200),
+            max_spread_pct    = config.get("max_spread_pct", 0.12),
             min_earnings_days = config.get("min_earnings_days", 14),
         )
         if not ok:
