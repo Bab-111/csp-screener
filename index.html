@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>CSP Screener Report — 2026-06-22 16:41:37</title>
+<title>CSP Screener Report — 2026-06-22 17:02:18</title>
 <style>
   :root {
     --bg: #ffffff; --bg2: #f7f6f3; --text: #1a1a18; --text2: #5f5e5a;
@@ -92,29 +92,80 @@
 <body>
 <div class="wrap">
   <h1>Institutional CSP Screener Report</h1>
-  <div class="subtitle">Generated 2026-06-22 16:41:37</div>
+  <div class="subtitle">Generated 2026-06-22 17:02:18</div>
 
   <div class="meta-bar regime-normal">
-    <div class="meta-item"><span class="meta-label">VIX</span><span class="meta-value">17.44</span></div>
+    <div class="meta-item"><span class="meta-label">VIX</span><span class="meta-value">17.35</span></div>
     <div class="meta-item"><span class="meta-label">Regime</span><span class="meta-value">Normal</span></div>
     <div class="meta-item"><span class="meta-label">Tickers scanned</span><span class="meta-value">38</span></div>
-    <div class="meta-item"><span class="meta-label">Contracts passed</span><span class="meta-value">0</span></div>
+    <div class="meta-item"><span class="meta-label">Contracts passed</span><span class="meta-value">7</span></div>
     <div class="meta-item"><span class="meta-label">Account size</span><span class="meta-value">$50,000</span></div>
-    <div class="meta-item"><span class="meta-label">Showing</span><span class="meta-value">Top 0</span></div>
+    <div class="meta-item"><span class="meta-label">Showing</span><span class="meta-value">Top 1</span></div>
   </div>
 
-  <div class="empty">No candidates passed all filters on this run. This can be a legitimate finding on a calm/low-volatility day — see the breakdown below for exactly why.</div>
-        <div class="reject-box">
-          <h3>Why nothing qualified</h3>
-          <p class="reject-intro">Every contract that was evaluated failed at least one hard filter below. Counts are per-contract, not per-ticker — one ticker can contribute several rejected strikes.</p>
-          <div class="reject-row"><span class="reject-count">1166×</span><span class="reject-label">open interest too low</span></div><div class="reject-row"><span class="reject-count">17×</span><span class="reject-label">earnings date unconfirmed / too close</span></div><div class="reject-row"><span class="reject-count">14×</span><span class="reject-label">bid-ask spread too wide</span></div><div class="reject-row"><span class="reject-count">10×</span><span class="reject-label">delta outside target range</span></div>
+  
+
+  <table><thead><tr><th>#</th><th>Ticker</th><th>Strike</th><th>DTE</th><th>Premium</th><th>Delta</th><th>IV%</th><th>HV%</th><th>VRP</th><th>IVR*</th><th>Yield/yr</th><th>Earn days</th><th>ProbOTM</th><th>BrkEven</th><th>Collateral</th><th>Juice</th><th>Score</th><th>Risk</th></tr></thead><tbody>
+        <tr>
+          <td class="num">1</td>
+          <td class="ticker">INTC</td>
+          <td class="num">$95.00</td>
+          <td class="num">32</td>
+          <td class="num">$1.67</td>
+          <td class="num">-0.07</td>
+          <td class="num">101.2%</td>
+          <td class="num">93.6%</td>
+          <td class="num">+7.7</td>
+          <td class="num">78</td>
+          <td class="num">20.0%</td>
+          <td class="num">N/A</td>
+          <td class="num">92.8%</td>
+          <td class="num">$93.33</td>
+          <td class="num">$9,500</td>
+          <td class="num">0.1973</td>
+          <td class="num score">60.5</td>
+          <td><span class="risk-pill" style="color:#444;background:#F1EFE8">Medium ⚠ earn unconfirmed</span></td>
+        </tr></tbody></table>
+
+  <p style="color:var(--text2);font-size:12px;margin-top:-1.5rem">* IVR = rolling-HV percentile proxy (not true options-based IV Rank) — verify on your broker before trading.</p>
+
+  <h2 style="font-size:18px;margin:2rem 0 1rem">Trade commentary</h2>
+        <div class="card" style="border-left: 3px solid #444">
+          <div class="card-header">
+            <span class="card-rank">1</span>
+            <span class="card-ticker">INTC</span>
+            <span class="card-detail">$95.00 Put · 32 DTE · Exp 2026-07-24</span>
+            <span class="risk-pill" style="color:#444;background:#F1EFE8">Medium ⚠ earn unconfirmed Risk</span>
+          </div>
+          <div class="card-grid">
+            <div class="card-section">
+              <h4>Volatility edge</h4>
+              <p>IV 101.2% · HV30 93.6% · VRP +7.7pp · IVHVRatio 1.08x · IVR proxy 78</p>
+            </div>
+            <div class="card-section">
+              <h4>Structure</h4>
+              <p>Spot $140.18 · Premium $1.67 · Annualized yield 20.0%</p>
+              <p>Expected move $42.01 · Cushion vs. expected move 2.3% (negative = strike inside the market's expected range) · Break-even $93.33</p>
+            </div>
+            <div class="card-section">
+              <h4>Earnings</h4>
+              <p>Not available — verify before entry — always verify on earnings calendar before entry</p>
+            </div>
+            <div class="card-section">
+              <h4>Execution</h4>
+              <p>OI 384 · Spread 10.21% · Collateral $9,500</p>
+              <div class="warn">⚠ 38% of a $25K account — check position sizing</div>
+            </div>
+            <div class="card-section">
+              <h4>Trend</h4>
+              <p>Price above 50d MA ($102.99) · Price above 200d MA ($56.09) · Golden cross (50d vs 200d)</p>
+            </div>
+            <div class="card-section">
+              <h4>Score breakdown</h4>
+              <p>VRP 50×25 + Yield 50×20 + Earn 30×15 + Δ 100×10 + IVR 100×10 + Cushion 75×10 + Liq 20×5 + Trend 100×5 = <b>60.5</b></p>
+            </div>
+          </div>
         </div>
-
-  
-
-  
-
-  
 
   
 
