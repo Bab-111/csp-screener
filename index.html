@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>CSP Screener Report — 2026-06-22 09:28:41</title>
+<title>CSP Screener Report — 2026-06-22 16:41:37</title>
 <style>
   :root {
     --bg: #ffffff; --bg2: #f7f6f3; --text: #1a1a18; --text2: #5f5e5a;
@@ -92,10 +92,10 @@
 <body>
 <div class="wrap">
   <h1>Institutional CSP Screener Report</h1>
-  <div class="subtitle">Generated 2026-06-22 09:28:41</div>
+  <div class="subtitle">Generated 2026-06-22 16:41:37</div>
 
   <div class="meta-bar regime-normal">
-    <div class="meta-item"><span class="meta-label">VIX</span><span class="meta-value">17.47</span></div>
+    <div class="meta-item"><span class="meta-label">VIX</span><span class="meta-value">17.44</span></div>
     <div class="meta-item"><span class="meta-label">Regime</span><span class="meta-value">Normal</span></div>
     <div class="meta-item"><span class="meta-label">Tickers scanned</span><span class="meta-value">38</span></div>
     <div class="meta-item"><span class="meta-label">Contracts passed</span><span class="meta-value">0</span></div>
@@ -104,6 +104,11 @@
   </div>
 
   <div class="empty">No candidates passed all filters on this run. This can be a legitimate finding on a calm/low-volatility day — see the breakdown below for exactly why.</div>
+        <div class="reject-box">
+          <h3>Why nothing qualified</h3>
+          <p class="reject-intro">Every contract that was evaluated failed at least one hard filter below. Counts are per-contract, not per-ticker — one ticker can contribute several rejected strikes.</p>
+          <div class="reject-row"><span class="reject-count">1166×</span><span class="reject-label">open interest too low</span></div><div class="reject-row"><span class="reject-count">17×</span><span class="reject-label">earnings date unconfirmed / too close</span></div><div class="reject-row"><span class="reject-count">14×</span><span class="reject-label">bid-ask spread too wide</span></div><div class="reject-row"><span class="reject-count">10×</span><span class="reject-label">delta outside target range</span></div>
+        </div>
 
   
 
@@ -112,10 +117,6 @@
   
 
   
-        <details class="errors">
-          <summary>38 tickers skipped (no data / fetch error)</summary>
-          <ul><li><code>AMZN</code> — all contracts had implausible IV — likely thin/stale quotes</li><li><code>META</code> — all contracts had implausible IV — likely thin/stale quotes</li><li><code>NVDA</code> — all contracts had implausible IV — likely thin/stale quotes</li><li><code>MSFT</code> — all contracts had implausible IV — likely thin/stale quotes</li><li><code>AMD</code> — all contracts had implausible IV — likely thin/stale quotes</li><li><code>AAPL</code> — all contracts had implausible IV — likely thin/stale quotes</li><li><code>GOOGL</code> — all contracts had implausible IV — likely thin/stale quotes</li><li><code>TSLA</code> — all contracts had implausible IV — likely thin/stale quotes</li><li><code>INTC</code> — all contracts had implausible IV — likely thin/stale quotes</li><li><code>AVGO</code> — all contracts had implausible IV — likely thin/stale quotes</li><li><code>QCOM</code> — all contracts had implausible IV — likely thin/stale quotes</li><li><code>BAC</code> — all contracts had implausible IV — likely thin/stale quotes</li><li><code>GS</code> — all contracts had implausible IV — likely thin/stale quotes</li><li><code>JPM</code> — all contracts had implausible IV — likely thin/stale quotes</li><li><code>MS</code> — all contracts had implausible IV — likely thin/stale quotes</li><li><code>MU</code> — all contracts had implausible IV — likely thin/stale quotes</li><li><code>V</code> — all contracts had implausible IV — likely thin/stale quotes</li><li><code>MA</code> — all contracts had implausible IV — likely thin/stale quotes</li><li><code>XOM</code> — all contracts had implausible IV — likely thin/stale quotes</li><li><code>CVX</code> — all contracts had implausible IV — likely thin/stale quotes</li></ul>
-        </details>
 
   <div class="footer">
     Data source: yfinance (Yahoo Finance, ~15min delayed) · Educational use only · Not financial advice<br>
