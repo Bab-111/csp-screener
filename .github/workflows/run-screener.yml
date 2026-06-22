@@ -10,7 +10,7 @@ on:
       tier:
         description: "Universe to scan"
         required: true
-        default: "quick"
+        default: "full"
         type: choice
         options:
           - quick
