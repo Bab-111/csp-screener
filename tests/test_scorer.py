@@ -26,7 +26,7 @@ def test_yield_excellent():        assert score_ann_yield(0.35) == 100.0
 
 # ── Earnings ───────────────────────────────────────────────────────────────────
 def test_earnings_reject():        assert score_earnings(10)  == 0.0
-def test_earnings_none():          assert score_earnings(None)== 0.0
+def test_earnings_none():          assert score_earnings(None)== 30.0  # unconfirmed = conservative penalty, not zero
 def test_earnings_caution():       assert score_earnings(15)  == 40.0
 def test_earnings_good():          assert score_earnings(30)  == 70.0
 def test_earnings_excellent():     assert score_earnings(60)  == 100.0
