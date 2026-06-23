@@ -4,10 +4,14 @@ universe.py — Ticker universe for the CSP screener.
 Organised into tiers so you can run a quick scan (TIER_1 only)
 or a full scan (all tiers).  Biotech, Chinese ADRs, leveraged ETFs
 and sub-$20 names are pre-excluded at the list level.
+
+INDEX COVERAGE (top 50% by options liquidity/volume):
+  - S&P 500 top ~250 by options activity
+  - Nasdaq 100 top ~50 by options activity
+  - Dow 30 (all 30, minus biotech/excluded)
 """
 
 # ── Tier 1: Highest-liquidity large-caps & ETFs ───────────────────────────────
-# Best option chains, tightest spreads, most reliable data from yfinance
 TIER_1 = [
     # Mega-cap tech
     "AAPL", "MSFT", "GOOGL", "META", "AMZN", "NVDA", "TSLA",
@@ -47,8 +51,62 @@ TIER_3 = [
     "CVS", "WBA", "CI", "HUM", "ELV",
 ]
 
+# ── Tier 4: S&P 500 / Nasdaq 100 / Dow 30 — top 50% by options volume ────────
+TIER_4_SP500 = [
+    # Cybersecurity
+    "PANW", "CRWD", "ZS", "FTNT",
+    # Financials / Alt asset managers
+    "BX", "KKR", "APO", "SCHW", "AXP", "BLK",
+    "CB", "MET", "PRU", "AFL", "ALL",
+    # Healthcare devices / services
+    "TMO", "DHR", "SYK", "BSX", "EW", "ZBH",
+    "ISRG", "MDT", "BDX", "BAX", "HCA",
+    # Consumer / retail
+    "TGT", "LOW", "TJX", "SBUX", "CMG",
+    "YUM", "DPZ", "DG", "DLTR", "KR", "SYY",
+    # Semis (non-Tier1)
+    "KEYS", "MPWR", "ENTG", "SWKS", "STX", "WDC", "NTAP",
+    # Energy (non-Tier1)
+    "EOG", "PXD", "MPC", "VLO", "PSX", "LNG", "DVN", "APA",
+    # Industrials / Defense
+    "HON", "RTX", "LMT", "NOC", "GD", "LHX", "TXT", "HII",
+    # Transportation / Logistics
+    "UNP", "CSX", "NSC", "UPS", "FDX", "JBHT",
+    # REITs
+    "AMT", "CCI", "EQIX", "PLD", "O", "WELL",
+    # Telecom
+    "T", "VZ", "TMUS", "CHTR", "CMCSA",
+    # Regional banks
+    "RF", "CFG", "FITB", "HBAN", "KEY", "MTB", "ZION",
+]
+
+TIER_4_NDX = [
+    # E-commerce / travel / gig
+    "MELI", "ABNB", "DASH",
+    # Enterprise SaaS
+    "TEAM", "WDAY", "VEEV", "OKTA", "MDB",
+    # MedTech
+    "DXCM", "IDXX", "ALGN",
+    # Industrials / professional services
+    "FAST", "ODFL", "CTAS", "VRSK", "CPRT", "PAYX", "ADP",
+    # EDA / design software
+    "ANSS", "CDNS", "SNPS",
+    # Biotech (large, non-binary)
+    "REGN", "VRTX", "BIIB", "ILMN",
+    # Clean energy
+    "FSLR", "ENPH",
+    # Consumer staples
+    "MNST", "KHC", "PEP", "KO",
+]
+
+TIER_4_DOW = [
+    # Dow 30 names not already in Tier 1–3
+    "CSCO", "DOW", "IBM", "PG", "TRV",
+]
+
+TIER_4 = TIER_4_SP500 + TIER_4_NDX + TIER_4_DOW
+
 # ── Pre-excluded (never scan) ─────────────────────────────────────────────────
-# Biotech, Chinese ADRs, leveraged ETFs — kept here for documentation
 EXCLUDED = [
     # Biotech (binary event risk)
     "MRNA", "BNTX", "BIIB", "REGN", "VRTX", "ILMN",
@@ -60,18 +118,26 @@ EXCLUDED = [
 ]
 
 # ── Convenience groupings ─────────────────────────────────────────────────────
-QUICK_SCAN   = TIER_1                          # ~40 tickers, ~2 min
-FULL_SCAN    = TIER_1 + TIER_2 + TIER_3       # ~100 tickers, ~8 min
+QUICK_SCAN = TIER_1
+FULL_SCAN  = TIER_1 + TIER_2 + TIER_3 + TIER_4
 
-def get_universe(tier: str = "quick") -> list[str]:
-    """Return the ticker list for the given tier name."""
+
+def get_universe(tier: str = "full") -> list[str]:
+    """Return the deduplicated ticker list for the given tier name."""
     mapping = {
-        "quick":  QUICK_SCAN,
+        "quick":  TIER_1,
         "full":   FULL_SCAN,
         "tier1":  TIER_1,
         "tier2":  TIER_2,
         "tier3":  TIER_3,
+        "tier4":  TIER_4,
     }
-    tickers = mapping.get(tier.lower(), QUICK_SCAN)
-    # Remove any that appear in the exclusion list
-    return [t for t in tickers if t not in EXCLUDED]
+    tickers = mapping.get(tier.lower(), FULL_SCAN)
+    # Deduplicate preserving order, remove excluded
+    seen = set()
+    result = []
+    for t in tickers:
+        if t not in EXCLUDED and t not in seen:
+            result.append(t)
+            seen.add(t)
+    return result
