@@ -18,6 +18,7 @@ on:
           - tier1
           - tier2
           - tier3
+          - tier4
       top_n:
         description: "Number of top candidates to return"
         required: true
