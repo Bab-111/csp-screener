@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>CSP Screener Report — 2026-06-25 05:51:12</title>
+<title>CSP Screener Report — 2026-06-25 18:18:01</title>
 <style>
   :root {
     --bg: #ffffff; --bg2: #f7f6f3; --text: #1a1a18; --text2: #5f5e5a;
@@ -92,34 +92,85 @@
 <body>
 <div class="wrap">
   <h1>Institutional CSP Screener Report</h1>
-  <div class="subtitle">Generated 2026-06-25 05:51:12</div>
+  <div class="subtitle">Generated 2026-06-25 18:18:01</div>
 
   <div class="meta-bar regime-normal">
-    <div class="meta-item"><span class="meta-label">VIX</span><span class="meta-value">18.63</span></div>
+    <div class="meta-item"><span class="meta-label">VIX</span><span class="meta-value">19.18</span></div>
     <div class="meta-item"><span class="meta-label">Regime</span><span class="meta-value">Normal</span></div>
     <div class="meta-item"><span class="meta-label">Tickers scanned</span><span class="meta-value">216</span></div>
-    <div class="meta-item"><span class="meta-label">Contracts passed</span><span class="meta-value">0</span></div>
+    <div class="meta-item"><span class="meta-label">Contracts passed</span><span class="meta-value">2</span></div>
     <div class="meta-item"><span class="meta-label">Account size</span><span class="meta-value">$50,000</span></div>
-    <div class="meta-item"><span class="meta-label">Showing</span><span class="meta-value">Top 0</span></div>
+    <div class="meta-item"><span class="meta-label">Showing</span><span class="meta-value">Top 1</span></div>
   </div>
 
-  <div class="empty">No candidates passed all filters on this run. This can be a legitimate finding on a calm/low-volatility day — see the breakdown below for exactly why.</div>
-        <div class="reject-box">
-          <h3>Why nothing qualified</h3>
-          <p class="reject-intro">Every contract that was evaluated failed at least one hard filter below. Counts are per-contract, not per-ticker — one ticker can contribute several rejected strikes.</p>
-          <div class="reject-row"><span class="reject-count">4×</span><span class="reject-label">avg</span></div><div class="reject-row"><span class="reject-count">3×</span><span class="reject-label">open interest too low</span></div><div class="reject-row"><span class="reject-count">1×</span><span class="reject-label">bid-ask spread too wide</span></div>
+  
+
+  <table><thead><tr><th>#</th><th>Ticker</th><th>Strike</th><th>DTE</th><th>Premium</th><th>Delta</th><th>IV%</th><th>HV%</th><th>VRP</th><th>IVR*</th><th>Yield/yr</th><th>Earn days</th><th>ProbOTM</th><th>BrkEven</th><th>Collateral</th><th>Juice</th><th>Score</th><th>Risk</th></tr></thead><tbody>
+        <tr>
+          <td class="num">1</td>
+          <td class="ticker">INTC</td>
+          <td class="num">$100.00</td>
+          <td class="num">29</td>
+          <td class="num">$2.58</td>
+          <td class="num">-0.12</td>
+          <td class="num">95.8%</td>
+          <td class="num">85.3%</td>
+          <td class="num">+10.5</td>
+          <td class="num">65</td>
+          <td class="num">32.5%</td>
+          <td class="num">N/A</td>
+          <td class="num">87.9%</td>
+          <td class="num">$97.42</td>
+          <td class="num">$10,000</td>
+          <td class="num">0.2490</td>
+          <td class="num score">71.2</td>
+          <td><span class="risk-pill" style="color:#444;background:#F1EFE8">Medium ⚠ earn unconfirmed</span></td>
+        </tr></tbody></table>
+
+  <p style="color:var(--text2);font-size:12px;margin-top:-1.5rem">* IVR = rolling-HV percentile proxy (not true options-based IV Rank) — verify on your broker before trading.</p>
+
+  <h2 style="font-size:18px;margin:2rem 0 1rem">Trade commentary</h2>
+        <div class="card" style="border-left: 3px solid #444">
+          <div class="card-header">
+            <span class="card-rank">1</span>
+            <span class="card-ticker">INTC</span>
+            <span class="card-detail">$100.00 Put · 29 DTE · Exp 2026-07-24</span>
+            <span class="risk-pill" style="color:#444;background:#F1EFE8">Medium ⚠ earn unconfirmed Risk</span>
+          </div>
+          <div class="card-grid">
+            <div class="card-section">
+              <h4>Volatility edge</h4>
+              <p>IV 95.8% · HV30 85.3% · VRP +10.5pp · IVHVRatio 1.12x · IVR proxy 65</p>
+            </div>
+            <div class="card-section">
+              <h4>Structure</h4>
+              <p>Spot $131.80 · Premium $2.58 · Annualized yield 32.5%</p>
+              <p>Expected move $35.60 · Cushion vs. expected move -2.9% (negative = strike inside the market's expected range) · Break-even $97.42</p>
+            </div>
+            <div class="card-section">
+              <h4>Earnings</h4>
+              <p>Not available — verify before entry — always verify on earnings calendar before entry</p>
+            </div>
+            <div class="card-section">
+              <h4>Execution</h4>
+              <p>OI 503 · Spread 8.12% · Collateral $10,000</p>
+              <div class="warn">⚠ 40% of a $25K account — check position sizing</div>
+            </div>
+            <div class="card-section">
+              <h4>Trend</h4>
+              <p>Price above 50d MA ($107.10) · Price above 200d MA ($57.71) · Golden cross (50d vs 200d)</p>
+            </div>
+            <div class="card-section">
+              <h4>Score breakdown</h4>
+              <p>VRP 75×25 + Yield 100×20 + Earn 30×15 + Δ 100×10 + IVR 100×10 + Cushion 20×10 + Liq 20×5 + Trend 100×5 = <b>71.2</b></p>
+            </div>
+          </div>
         </div>
 
   
-
-  
-
-  
-
-  
         <details class="errors">
-          <summary>211 tickers skipped (no data / fetch error)</summary>
-          <ul><li><code>AMZN</code> — all contracts had implausible IV — likely thin/stale quotes</li><li><code>TSLA</code> — all contracts had implausible IV — likely thin/stale quotes</li><li><code>META</code> — all contracts had implausible IV — likely thin/stale quotes</li><li><code>NVDA</code> — all contracts had implausible IV — likely thin/stale quotes</li><li><code>MSFT</code> — all contracts had implausible IV — likely thin/stale quotes</li><li><code>GOOGL</code> — all contracts had implausible IV — likely thin/stale quotes</li><li><code>AAPL</code> — all contracts had implausible IV — likely thin/stale quotes</li><li><code>AMD</code> — all contracts had implausible IV — likely thin/stale quotes</li><li><code>AVGO</code> — all contracts had implausible IV — likely thin/stale quotes</li><li><code>INTC</code> — all contracts had implausible IV — likely thin/stale quotes</li><li><code>MS</code> — all contracts had implausible IV — likely thin/stale quotes</li><li><code>QCOM</code> — all contracts had implausible IV — likely thin/stale quotes</li><li><code>GS</code> — all contracts had implausible IV — likely thin/stale quotes</li><li><code>BAC</code> — all contracts had implausible IV — likely thin/stale quotes</li><li><code>JPM</code> — all contracts had implausible IV — likely thin/stale quotes</li><li><code>MU</code> — all contracts had implausible IV — likely thin/stale quotes</li><li><code>V</code> — all contracts had implausible IV — likely thin/stale quotes</li><li><code>MA</code> — all contracts had implausible IV — likely thin/stale quotes</li><li><code>COP</code> — all contracts had implausible IV — likely thin/stale quotes</li><li><code>CVX</code> — all contracts had implausible IV — likely thin/stale quotes</li></ul>
+          <summary>4 tickers skipped (no data / fetch error)</summary>
+          <ul><li><code>SQ</code> — insufficient price history</li><li><code>WBA</code> — insufficient price history</li><li><code>PXD</code> — insufficient price history</li><li><code>ANSS</code> — insufficient price history</li></ul>
         </details>
 
   <div class="footer">
