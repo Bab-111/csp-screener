@@ -67,28 +67,29 @@ def print_results_table(candidates: List[Candidate]) -> None:
         title_style="bold cyan",
     )
 
-    t.add_column("#",          style="dim",     width=3,  justify="right")
-    t.add_column("Ticker",     style="bold",    width=6)
-    t.add_column("Strike",     justify="right", width=8)
-    t.add_column("DTE",        justify="right", width=4)
-    t.add_column("Premium",    justify="right", width=8)
-    t.add_column("Delta",      justify="right", width=6)
-    t.add_column("IV%",        justify="right", width=6)
-    t.add_column("HV%",        justify="right", width=6)
-    t.add_column("VRP",        justify="right", width=7)
-    t.add_column("IVR*",       justify="right", width=6)
-    t.add_column("Yield/yr",   justify="right", width=8)
-    t.add_column("Earn days",  justify="right", width=9)
-    t.add_column("ProbOTM",    justify="right", width=8)
-    t.add_column("BrkEven",    justify="right", width=8)
-    t.add_column("Collat.",    justify="right", width=9)
-    t.add_column("Juice",      justify="right", width=7)
-    t.add_column("Score",      justify="right", width=6)
-    t.add_column("Risk",       justify="center",width=7)
+    t.add_column("#",           style="dim",     width=3,  justify="right")
+    t.add_column("Ticker",      style="bold",    width=6)
+    t.add_column("Strike",      justify="right", width=8)
+    t.add_column("DTE",         justify="right", width=4)
+    t.add_column("Premium",     justify="right", width=8)
+    t.add_column("Delta",       justify="right", width=6)
+    t.add_column("IV%",         justify="right", width=6)
+    t.add_column("HV%",         justify="right", width=6)
+    t.add_column("VRP",         justify="right", width=7)
+    t.add_column("IVHVRatio",   justify="right", width=9)
+    t.add_column("PremEff",     justify="right", width=7)
+    t.add_column("Yield/yr",    justify="right", width=8)
+    t.add_column("Earn days",   justify="right", width=9)
+    t.add_column("ProbOTM",     justify="right", width=8)
+    t.add_column("BrkEven",     justify="right", width=8)
+    t.add_column("Collat.",     justify="right", width=9)
+    t.add_column("Juice",       justify="right", width=7)
+    t.add_column("Score",       justify="right", width=6)
+    t.add_column("Risk",        justify="center",width=10)
 
     for i, c in enumerate(candidates, 1):
         risk_col = f"[{_risk_color(c.risk_label)}]{c.risk_label}[/]"
-        earn_str = str(c.earnings_days) if c.earnings_days else "N/A"
+        earn_str = str(c.earnings_days) if c.earnings_days else "N/A ⚠"
 
         t.add_row(
             str(i),
@@ -100,7 +101,8 @@ def print_results_table(candidates: List[Candidate]) -> None:
             _pct(c.iv),
             _pct(c.hv30),
             _pp(c.vrp),
-            f"{c.ivr:.0f}",
+            f"{c.ivhv_ratio:.2f}x",
+            f"{c.prem_efficiency:.3f}",
             _pct(c.ann_yield),
             earn_str,
             _pct(c.prob_otm),
@@ -113,8 +115,8 @@ def print_results_table(candidates: List[Candidate]) -> None:
 
     console.print(t)
     console.print(
-        "  [dim]* IVR = HV-rank proxy (rolling 30d HV percentile over 1y). "
-        "Full IVR requires options history — verify on your broker.[/dim]"
+        "  [dim]IVHVRatio = IV/HV30 (display). "
+        "PremEff = Premium/ExpMove — higher = better paid per unit of risk.[/dim]"
     )
     console.print()
 
@@ -154,10 +156,10 @@ def print_commentary(candidates: List[Candidate]) -> None:
             collat_warn = f"  ⚠️  {pct_25k:.0f}% of $25K account — check position sizing\n"
 
         score_breakdown = (
-            f"VRP {c.s_vrp:.0f}×25% + Yield {c.s_yield:.0f}×20% + "
-            f"Earn {c.s_earnings:.0f}×15% + Δ {c.s_delta:.0f}×10% + "
-            f"IVR {c.s_ivr:.0f}×10% + Cushion {c.s_cushion:.0f}×10% + "
-            f"Liq {c.s_liquidity:.0f}×5% + Trend {c.s_trend:.0f}×5% = "
+            f"VRP {c.s_vrp:.0f}×30% + Yield {c.s_yield:.0f}×25% + "
+            f"Earn {c.s_earnings:.0f}×20% + Δ {c.s_delta:.0f}×10% + "
+            f"PremEff {c.s_prem_eff:.0f}×10% + "
+            f"Liq {c.s_liquidity:.0f}×5% = "
             f"[bold]{c.final_score:.1f}[/bold]"
         )
 
@@ -204,12 +206,11 @@ def save_csv(candidates: List[Candidate], path: str) -> None:
     Path(path).parent.mkdir(parents=True, exist_ok=True)
     fields = [
         "rank", "ticker", "strike", "dte", "expiry", "premium", "delta",
-        "iv_pct", "hv30_pct", "vrp_pp", "ivhv_ratio", "ivr_proxy",
+        "iv_pct", "hv30_pct", "vrp_pp", "ivhv_ratio", "prem_efficiency",
         "ann_yield_pct", "earnings_days", "prob_otm_pct", "breakeven",
         "collateral", "exp_move", "cushion_pct", "oi", "spread_pct",
-        "juice_score", "final_score", "risk",
-        "s_vrp", "s_yield", "s_earnings", "s_delta",
-        "s_ivr", "s_cushion", "s_liquidity", "s_trend",
+        "vix_regime", "juice_score", "final_score", "risk",
+        "s_vrp", "s_yield", "s_earnings", "s_delta", "s_prem_eff", "s_liquidity",
     ]
     with open(path, "w", newline="") as f:
         w = csv.DictWriter(f, fieldnames=fields)
@@ -224,7 +225,7 @@ def save_csv(candidates: List[Candidate], path: str) -> None:
                 "hv30_pct": round(c.hv30 * 100, 2),
                 "vrp_pp": round(c.vrp, 2),
                 "ivhv_ratio": round(c.ivhv_ratio, 3),
-                "ivr_proxy": round(c.ivr, 1),
+                "prem_efficiency": round(c.prem_efficiency, 4),
                 "ann_yield_pct": round(c.ann_yield * 100, 2),
                 "earnings_days": c.earnings_days,
                 "prob_otm_pct": round(c.prob_otm * 100, 2),
@@ -234,13 +235,13 @@ def save_csv(candidates: List[Candidate], path: str) -> None:
                 "cushion_pct": round(c.cushion * 100, 2),
                 "oi": int(c.oi),
                 "spread_pct": round(c.spread_pct * 100, 3),
+                "vix_regime": c.vix_regime,
                 "juice_score": round(c.juice_score, 6),
                 "final_score": round(c.final_score, 2),
                 "risk": c.risk_label,
                 "s_vrp": c.s_vrp, "s_yield": c.s_yield,
                 "s_earnings": c.s_earnings, "s_delta": c.s_delta,
-                "s_ivr": c.s_ivr, "s_cushion": c.s_cushion,
-                "s_liquidity": c.s_liquidity, "s_trend": c.s_trend,
+                "s_prem_eff": c.s_prem_eff, "s_liquidity": c.s_liquidity,
             })
     console.print(f"  [dim]CSV saved → {path}[/dim]")
 
@@ -260,7 +261,7 @@ def save_json(candidates: List[Candidate], path: str) -> None:
             "hv30_pct": round(c.hv30 * 100, 2),
             "vrp_pp": round(c.vrp, 2),
             "ivhv_ratio": round(c.ivhv_ratio, 3),
-            "ivr_proxy": round(c.ivr, 1),
+            "prem_efficiency": round(c.prem_efficiency, 4),
             "ann_yield_pct": round(c.ann_yield * 100, 2),
             "earnings_days": c.earnings_days,
             "prob_otm_pct": round(c.prob_otm * 100, 2),
@@ -270,14 +271,17 @@ def save_json(candidates: List[Candidate], path: str) -> None:
             "cushion_pct": round(c.cushion * 100, 2),
             "oi": int(c.oi),
             "spread_pct": round(c.spread_pct * 100, 3),
+            "vix_regime": c.vix_regime,
             "juice_score": round(c.juice_score, 6),
             "final_score": round(c.final_score, 2),
             "risk": c.risk_label,
             "score_breakdown": {
-                "vrp": c.s_vrp, "yield": c.s_yield,
-                "earnings": c.s_earnings, "delta": c.s_delta,
-                "ivr": c.s_ivr, "cushion": c.s_cushion,
-                "liquidity": c.s_liquidity, "trend": c.s_trend,
+                "vrp":       c.s_vrp,
+                "yield":     c.s_yield,
+                "earnings":  c.s_earnings,
+                "delta":     c.s_delta,
+                "prem_eff":  c.s_prem_eff,
+                "liquidity": c.s_liquidity,
             },
         })
     with open(path, "w") as f:
