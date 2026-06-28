@@ -277,6 +277,14 @@ class StockData:
             # IVHVRatio
             puts["ivhv_ratio"] = puts["iv"] / self.hv30 if self.hv30 > 0 else np.nan
 
+            # Premium Efficiency = Premium / ExpectedMove
+            # Higher = better compensated per unit of expected stock movement
+            # This replaces IVR proxy in the v2.0 scoring framework
+            puts["prem_efficiency"] = puts.apply(
+                lambda r: r["mid"] / r["exp_move"] if r["exp_move"] > 0 else 0.0,
+                axis=1,
+            )
+
             self.options_df = puts.reset_index(drop=True)
             self.valid = True
 
