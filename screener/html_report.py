@@ -55,7 +55,7 @@ def generate_html_report(
           <td class="num">{c.iv*100:.1f}%</td>
           <td class="num">{c.hv30*100:.1f}%</td>
           <td class="num">{c.vrp:+.1f}</td>
-          <td class="num">{c.ivr:.0f}</td>
+          <td class="num">{c.ivhv_ratio:.2f}x</td>
           <td class="num">{c.ann_yield*100:.1f}%</td>
           <td class="num">{earn_str}</td>
           <td class="num">{c.prob_otm*100:.1f}%</td>
@@ -101,7 +101,7 @@ def generate_html_report(
           <div class="card-grid">
             <div class="card-section">
               <h4>Volatility edge</h4>
-              <p>IV {c.iv*100:.1f}% · HV30 {c.hv30*100:.1f}% · VRP {c.vrp:+.1f}pp · IVHVRatio {ivhv_str} · IVR proxy {c.ivr:.0f}</p>
+              <p>IV {c.iv*100:.1f}% · HV30 {c.hv30*100:.1f}% · VRP {c.vrp:+.1f}pp · IVHVRatio {ivhv_str} · PremEff {c.prem_efficiency:.3f} ({c.premium:.2f}/{c.exp_move:.2f})</p>
             </div>
             <div class="card-section">
               <h4>Structure</h4>
@@ -123,7 +123,7 @@ def generate_html_report(
             </div>
             <div class="card-section">
               <h4>Score breakdown</h4>
-              <p>VRP {c.s_vrp:.0f}×25 + Yield {c.s_yield:.0f}×20 + Earn {c.s_earnings:.0f}×15 + Δ {c.s_delta:.0f}×10 + IVR {c.s_ivr:.0f}×10 + Cushion {c.s_cushion:.0f}×10 + Liq {c.s_liquidity:.0f}×5 + Trend {c.s_trend:.0f}×5 = <b>{c.final_score:.1f}</b></p>
+              <p>VRP {c.s_vrp:.0f}×30 + Yield {c.s_yield:.0f}×25 + Earn {c.s_earnings:.0f}×20 + Δ {c.s_delta:.0f}×10 + PremEff {c.s_prem_eff:.0f}×10 + Liq {c.s_liquidity:.0f}×5 = <b>{c.final_score:.1f}</b></p>
             </div>
           </div>
         </div>"""
@@ -272,11 +272,11 @@ def generate_html_report(
 
   {"<table><thead><tr>"
     "<th>#</th><th>Ticker</th><th>Strike</th><th>DTE</th><th>Premium</th><th>Delta</th>"
-    "<th>IV%</th><th>HV%</th><th>VRP</th><th>IVR*</th><th>Yield/yr</th><th>Earn days</th>"
+    "<th>IV%</th><th>HV%</th><th>VRP</th><th>IVHVRatio</th><th>Yield/yr</th><th>Earn days</th>"
     "<th>ProbOTM</th><th>BrkEven</th><th>Collateral</th><th>Juice</th><th>Score</th><th>Risk</th>"
     "</tr></thead><tbody>" + rows_html + "</tbody></table>" if candidates else ""}
 
-  {f'<p style="color:var(--text2);font-size:12px;margin-top:-1.5rem">* IVR = rolling-HV percentile proxy (not true options-based IV Rank) — verify on your broker before trading.</p>' if candidates else ""}
+  {f'<p style="color:var(--text2);font-size:12px;margin-top:-1.5rem">IVHVRatio = IV ÷ HV30 (display only). PremEff = Premium ÷ ExpectedMove — higher means better paid per unit of risk. Trend shown in commentary only — not used in scoring.</p>' if candidates else ""}
 
   {f'<h2 style="font-size:18px;margin:2rem 0 1rem">Trade commentary</h2>{commentary_html}' if candidates else ""}
 
